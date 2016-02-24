@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 import SocketServer
 import time
+import json
 
 """
 Variables and functions that must be used by all the ClientHandler objects
 must be written here (e.g. a dictionary for connected clients)
 """
-connectedClients = []   #Liste over tilkoblede klienter
-history = []            #Liste over historikk
-taken_usernames = []    #Liste over usernames i bruk
 
+connectedClients = []   #Liste over tilkoblede klienter
+history = {}            #Dict over historikk, sorteres på key som er timestamp
+taken_usernames = []    #Liste over usernames i bruk
 
 class ClientHandler(SocketServer.BaseRequestHandler):
     """
@@ -28,42 +29,49 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         self.ip = self.client_address[0]
         self.port = self.client_address[1]
         self.connection = self.request
-        self.connectedClients.append(self)  #Legger til seg selv (connection) til listen over tilkoblede klienter
+        connectedClients.append(self)  #Legger til seg selv (connection) til listen over tilkoblede klienter
 
         # Loop that listens for messages from the client
         while True:
             try:
-                received_string = self.connection.recv(4096)
+                received_string = self.connection.recv(1024)
                 received_json = json.loads(received_string)
+                print received_json
                 # TODO: Add handling of received payload from client
 
                 if received_json['request'] == 'login':
+                    print 'Gikk inn i login tilfellet'
                     self.login(received_json['content'])
+                    print 'sendt til login funksjon'
 
-                if received_json['request'] == 'logout':
+                elif received_json['request'] == 'logout':
                     self.logout(received_json['content'])
 
-                if received_json['request'] == 'msg':
+                elif received_json['request'] == 'msg':
+                    print 'Gikk inn i msg tilfellet'
                     self.msg(received_json['content'])
+                    print 'sendt til msg funksjon'
 
-                if received_json['request'] == 'names':
+                elif received_json['request'] == 'names':
                     self.names(received_json['content'])
 
-                if received_json['request'] == 'help':
+                elif received_json['request'] == 'help':
                     self.help(received_json['content'])
 
                 
                 pass
             except Exception, e:
-                payload = json.dumps(e)
-                self.send(payload)
+                payload = json.dumps({'error': "problem på server"})
+                self.connection.send(payload)
 
 
     def login(self, username):  #Skal sjekke om brukernavn er tatt, log inn hvis ja, send feilmelding om nei
         #Sjekk om brukernavn er gyldig formatert
         #Sjekk om brukernavn er tatt fra før
         #Legg til brukernavn med de andre
+        print 'Sjekker om brukernavn i taken_usernames'
         if username not in taken_usernames:
+            print 'Brukernavn er ikke i taken_usernames'
             self.username = username
             taken_usernames.append(self.username)
             print 'New user %s connected' % self.username
@@ -82,8 +90,11 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 
     def msg(self, msg):
         #Send beskjed på chat med timestamp
-        payload = json.dumps({'timestamp': datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'), 'sender': self.username, 'response': 'msg', 'content': msg})
-        history.append(payload)
+        payload = json.dumps({'timestamp': '1000', 'sender': self.username, 'response': 'msg', 'content': msg})
+        print "Legger til i history"
+        history['new key']= msg
+        print "Lagt til i history"
+        print history
         self.connection.send(payload)
 
     def names(self):
@@ -96,6 +107,9 @@ class ClientHandler(SocketServer.BaseRequestHandler):
     def help(self):
         payload = json.dumps({'timestamp': datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'), 'sender': "Server", 'response': 'info' ,'content': 'Masse info om bruk her'})
         self.connection.send(payload)
+
+
+
 
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
