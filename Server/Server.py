@@ -2,6 +2,7 @@
 import SocketServer
 import datetime
 import json
+import re
 
 """
 Variables and functions that must be used by all the ClientHandler objects
@@ -37,7 +38,6 @@ class ClientHandler(SocketServer.BaseRequestHandler):
                 #Fra send i client, jeg sender til message receiver
                 received_string = self.connection.recv(1024) 
                 received_json = json.loads(received_string)
-                print received_json
                 # TODO: Add handling of received payload from client
 
                 if received_json['request'] == 'login':
@@ -45,22 +45,29 @@ class ClientHandler(SocketServer.BaseRequestHandler):
                     self.login(received_json['content'])
                     print 'sendt til login funksjon'
 
-                elif received_json['request'] == 'logout':
-                    self.logout(received_json['content'])
+                elif received_json['request'] == 'help':
+                    self.help()
+                
+                elif received_json['request'] == 'logout': 
+                    print 'Logout acked'
+                    if self.username == '':
+                        raise Exception('Not logged in')   
+                    self.logout()
 
                 elif received_json['request'] == 'msg':
+                    if self.username == '':
+                        raise Exception('Not logged in') 
                     print 'Gikk inn i msg tilfellet'
                     self.msg(received_json['content'])
                     print 'sendt til msg funksjon'
 
                 elif received_json['request'] == 'names':
-                    self.names(received_json['content'])
+                    if self.username == '':
+                        raise Exception('Not logged in') 
+                    self.names()
+                else:
+                    self.help()
 
-                elif received_json['request'] == 'help':
-                    self.help(received_json['content'])
-
-                
-                pass
             except Exception, e:
                 payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': 'server', 'response': 'error', 'content': str(e)})
                 self.connection.send(payload)
@@ -70,48 +77,68 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         #Sjekk om brukernavn er gyldig formatert
         #Sjekk om brukernavn er tatt fra før
         #Legg til brukernavn med de andre
-        print 'Sjekker om brukernavn i taken_usernames'
         if re.match("^[A-Za-z0-9]*$", username):
+            print 'Sjekker om brukernavn i taken_usernames'
             if username not in taken_usernames:
                 print 'Brukernavn er ikke i taken_usernames'
                 self.username = username
                 taken_usernames.append(self.username)
                 print 'New user %s connected' % self.username
             #uppercase etc and right error &&& send history!!!
+                
+                info = 'Login successful'
+                payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': 'server', 'response': 'info', 'content': info})
+                self.connection.send(payload)
+                if history != []:
+                    payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': 'server', 'response': 'history', 'content': history})
+                    self.connection.send(payload)
+
             else:
-                throw Exception("Username taken")
+                raise Exception("Username taken.")
         else:
-            throw Exception('Username unvalid. Try another username with A-Z, a-z, 0-9.')
+            raise Exception('Username unvalid. Try another username with A-Z, a-z, 0-9.')
 
     def logout(self):
-        if self in connectedClients:
-            connectedClients.remove(self)           #Fjerner klient fra listen connectedClients
-        if self.username in taken_usernames:
-            taken_usernames.remove(self.username)   #Fjerner brukernavn fra listen taken_usernames
-        self.connection.close()
-        print 'User: %s has logged out' % self.username
+        try: 
+            if self in connectedClients:
+                connectedClients.remove(self)           #Fjerner klient fra listen connectedClients
+            if self.username in taken_usernames:
+                taken_usernames.remove(self.username)   #Fjerner brukernavn fra listen taken_usernames
+            self.connection.close()
+            print 'User: %s has logged out' % self.username #Kan man aksessere self.username når har closed?
+        except:
+            raise Exception('Logout failed.')
 
     def msg(self, msg):
         #Send beskjed på chat med timestamp
-        payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': self.username, 'response': 'message', 'content': msg})
-        print "Legger til i history"
-        #Endret til JSONobjekt
-        history.append(payload)
-        print "Lagt til i history"
-        #PRINT HISTORY!
-        self.connection.send(payload)
+        try:
+            payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': self.username, 'response': 'message', 'content': msg})
+            print "Legger til i history"
+            history.append(payload)
+            print "Lagt til i history"
+
+            for client in connectedClients:
+                client.connection.send(payload)
+        except:
+            raise Exception('Message sending failed.')
 
     def names(self):
-        names = ''
-        for usernames in taken_usernames:
-            names += user.usernames + ","
-        payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': "Server", 'response': 'info' ,'content': names})
-        self.connection.send(payload)
+        try: 
+            names = ''
+            for taken_username in taken_usernames:
+                names += taken_username + ", "
+            payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': "Server", 'response': 'info' ,'content': names})
+            self.connection.send(payload)
+        except:
+            raise Exception('Retrieving names failed.')
 
     def help(self):
-        payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': "Server", 'response': 'info' ,'content': 'Masse info om bruk her'})
-        self.connection.send(payload)
-
+        try:
+            helpMessage = '\nAll commands:\nlogin <username>\nlogout\nmsg <message>\nnames\nhelp'
+            payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': "Server", 'response': 'info' ,'content': helpMessage})
+            self.connection.send(payload)
+        except:
+            raise Exception('Retrieving info failed.')
 
 
 
@@ -120,6 +147,7 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     """
     This class is present so that each client connected will be ran as a own
     thread. In that way, all clients will be served by the server.
+
     No alterations are necessary
     """
     allow_reuse_address = True
@@ -128,6 +156,7 @@ if __name__ == "__main__":
     """
     This is the main method and is executed when you type "python Server.py"
     in your terminal.
+
     No alterations are necessary
     """
     HOST, PORT = 'localhost', 9998

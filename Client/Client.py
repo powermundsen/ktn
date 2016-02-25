@@ -56,7 +56,7 @@ class Client:
                 print "Sendt med self.send_payload(payload)"
 
             elif request == 'logout':
-                payload = json.dumps({'request': 'logout'})
+                payload = json.dumps({'request': 'logout', content: None})
                 self.send_payload(payload)
 
             elif request == 'msg':
@@ -72,8 +72,8 @@ class Client:
                 self.send_payload(payload)
 
             else:
-                print "Hva er det du prover paa? "
-                return
+                payload = json.dumps({'request': 'help', 'content': None})
+                self.send_payload(payload)
         pass
 
         
@@ -89,8 +89,6 @@ class Client:
 
         message_parser = MessageParser()
         message_parser.parse(message)
-
-
 
         # try:
         #     message = json.loads(message)

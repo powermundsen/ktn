@@ -13,7 +13,6 @@ class MessageParser():
 
     def parse(self, payload):
         received_json = json.loads(payload)
-        print received_json
 
         if received_json['response'] in self.possible_responses:
             return self.possible_responses[received_json['response']](received_json)
@@ -28,12 +27,16 @@ class MessageParser():
         print 'Info:  %s' % payload['content']
 
     def parse_message(self, payload):
-        print payload
         print " %s %s : %s" % (payload['timestamp'], payload['sender'],  payload['content'])
 
     def parse_history(self, payload):
         #For lokke
-        print 'History:  %s', payload[content]
+        print 'History:'
+
+        for jsonHistory in payload['content']:
+            history = json.loads(jsonHistory)
+            #history er en struct med timestamp, message.
+            self.parse_message(history)
 
     
     # Include more methods for handling the different responses... 
