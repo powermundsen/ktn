@@ -9,7 +9,7 @@ must be written here (e.g. a dictionary for connected clients)
 """
 
 connectedClients = []   #Liste over tilkoblede klienter
-history = {}            #Dict over historikk, sorteres på key som er timestamp
+history = []            #Dict over historikk, sorteres på key som er timestamp
 taken_usernames = []    #Liste over usernames i bruk
 
 class ClientHandler(SocketServer.BaseRequestHandler):
@@ -17,7 +17,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
     This is the ClientHandler class. Everytime a new client connects to the
     server, a new ClientHandler object will be created. This class represents
     only connected clients, and not the server itself. If you want to write
-    logic for the server, you must write it outside this class
+    logic for the server, you must write it outside this class.
     """
 
     username = ""
@@ -75,6 +75,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             self.username = username
             taken_usernames.append(self.username)
             print 'New user %s connected' % self.username
+        #uppercase etc and right error &&& send history!!!
         else:
             if username in connectedClients:
                 self.error('Username taken or unvalid. Try another username with A-Z, a-z, 0-9')
@@ -92,9 +93,10 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         #Send beskjed på chat med timestamp
         payload = json.dumps({'timestamp': '1000', 'sender': self.username, 'response': 'msg', 'content': msg})
         print "Legger til i history"
-        history['new key']= msg
+        #Endret til JSONobjekt
+        history.append(payload)
         print "Lagt til i history"
-        print history
+        #PRINT HISTORY!
         self.connection.send(payload)
 
     def names(self):
