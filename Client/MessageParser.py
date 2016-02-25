@@ -6,7 +6,6 @@ class MessageParser():
         self.possible_responses = {
             'error': self.parse_error,
             'info': self.parse_info,
-	    # More key:values pairs are needed	
             'message': self.parse_message,
             'history': self.parse_history
         }
@@ -21,13 +20,13 @@ class MessageParser():
             return
 
     def parse_error(self, payload):
-        print ' Error:  %s' % payload['content']
+        print '[Error]:  %s' % payload['content']
     
     def parse_info(self, payload):
-        print ' Info:  %s' % payload['content']
+        print '[Info]:  %s' % payload['content']
 
     def parse_message(self, payload):
-        print " %s %s : %s" % (payload['timestamp'], payload['sender'],  payload['content'])
+        print "%s       %s      : %s" % (payload['timestamp'], payload['sender'],  payload['content'])
 
     def parse_history(self, payload):
         #For lokke
@@ -35,8 +34,4 @@ class MessageParser():
 
         for jsonHistory in payload['content']:
             history = json.loads(jsonHistory)
-            #history er en struct med timestamp, message.
             self.parse_message(history)
-
-    
-    # Include more methods for handling the different responses... 
