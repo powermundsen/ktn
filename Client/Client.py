@@ -41,6 +41,7 @@ class Client:
             print "Melding fra bruker mottatt "
             #Sorter keyword og innhold, takler kun 'help', 'names'
             request = user_input[0]
+            content = 'None'
             try:
                 content = user_input[1]
             except Exception, e:
@@ -63,11 +64,11 @@ class Client:
                 self.send_payload(payload)
 
             elif request == 'names':
-                payload = json.dumps({'request': 'names'})
+                payload = json.dumps({'request': 'names', 'content': None})
                 self.send_payload(payload)
 
             elif request == 'help':
-                payload = json.dumps({'request': 'help'})
+                payload = json.dumps({'request': 'help', 'content': None})
                 self.send_payload(payload)
 
             else:
@@ -86,17 +87,22 @@ class Client:
     def receive_message(self, message):
         # TODO: Handle incoming message
 
-        try:
-            message = json.loads(message)
-            pass
-        except Exception, e:
-            return
+        message_parser = MessageParser()
+        message_parser.parse(message)
 
-        if message['response'] == 'msg':
-            print message['timestamp'], message['sender'] + ':',  message['content']
 
-        elif message['response'] == 'info':
-            print message['timestamp'] + 'INFO' + ':', message['content']
+
+        # try:
+        #     message = json.loads(message)
+        #     pass
+        # except Exception, e:
+        #     return
+
+        # if message['response'] == 'msg':
+        #     print message['timestamp'], message['sender'] + ':',  message['content']
+
+        # elif message['response'] == 'info':
+        #     print message['timestamp'] + 'INFO' + ':', message['content']
         
 
 

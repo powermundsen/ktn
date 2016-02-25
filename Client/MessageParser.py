@@ -12,10 +12,11 @@ class MessageParser():
         }
 
     def parse(self, payload):
-        payload = {'request': req, 'content':cont} # decode the JSON object
+        received_json = json.loads(payload)
+        print received_json
 
-        if payload['response'] in self.possible_responses:
-            return self.possible_responses[payload['response']](payload)
+        if received_json['response'] in self.possible_responses:
+            return self.possible_responses[received_json['response']](received_json)
         else:
             # Response not valid
             return
@@ -27,7 +28,8 @@ class MessageParser():
         print 'Info:  %s' % payload['content']
 
     def parse_message(self, payload):
-        print '%i %s: %s' % datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'), payload['sender'], payload['content']
+        print payload
+        print " %s %s : %s" % (payload['timestamp'], payload['sender'],  payload['content'])
 
     def parse_history(self, payload):
         #For lokke

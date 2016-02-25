@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import SocketServer
-import time
+import datetime
 import json
 
 """
@@ -34,7 +34,8 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         # Loop that listens for messages from the client
         while True:
             try:
-                received_string = self.connection.recv(1024)
+                #Fra send i client, jeg sender til message receiver
+                received_string = self.connection.recv(1024) 
                 received_json = json.loads(received_string)
                 print received_json
                 # TODO: Add handling of received payload from client
@@ -61,7 +62,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
                 
                 pass
             except Exception, e:
-                payload = json.dumps({'error': "problem på server"})
+                payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': 'server', 'response': 'error', 'content': str(e)})
                 self.connection.send(payload)
 
 
@@ -70,16 +71,17 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         #Sjekk om brukernavn er tatt fra før
         #Legg til brukernavn med de andre
         print 'Sjekker om brukernavn i taken_usernames'
-        if username not in taken_usernames:
-            print 'Brukernavn er ikke i taken_usernames'
-            self.username = username
-            taken_usernames.append(self.username)
-            print 'New user %s connected' % self.username
-        #uppercase etc and right error &&& send history!!!
+        if re.match("^[A-Za-z0-9]*$", username):
+            if username not in taken_usernames:
+                print 'Brukernavn er ikke i taken_usernames'
+                self.username = username
+                taken_usernames.append(self.username)
+                print 'New user %s connected' % self.username
+            #uppercase etc and right error &&& send history!!!
+            else:
+                throw Exception("Username taken")
         else:
-            if username in connectedClients:
-                self.error('Username taken or unvalid. Try another username with A-Z, a-z, 0-9')
-
+            throw Exception('Username unvalid. Try another username with A-Z, a-z, 0-9.')
 
     def logout(self):
         if self in connectedClients:
@@ -87,11 +89,11 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         if self.username in taken_usernames:
             taken_usernames.remove(self.username)   #Fjerner brukernavn fra listen taken_usernames
         self.connection.close()
-        print 'User: $s has logged out' % self.username
+        print 'User: %s has logged out' % self.username
 
     def msg(self, msg):
         #Send beskjed på chat med timestamp
-        payload = json.dumps({'timestamp': '1000', 'sender': self.username, 'response': 'msg', 'content': msg})
+        payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': self.username, 'response': 'message', 'content': msg})
         print "Legger til i history"
         #Endret til JSONobjekt
         history.append(payload)
@@ -103,11 +105,11 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         names = ''
         for usernames in taken_usernames:
             names += user.usernames + ","
-        payload = json.dumps({'timestamp': datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'), 'sender': "Server", 'response': 'info' ,'content': names})
+        payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': "Server", 'response': 'info' ,'content': names})
         self.connection.send(payload)
 
     def help(self):
-        payload = json.dumps({'timestamp': datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'), 'sender': "Server", 'response': 'info' ,'content': 'Masse info om bruk her'})
+        payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': "Server", 'response': 'info' ,'content': 'Masse info om bruk her'})
         self.connection.send(payload)
 
 
@@ -118,7 +120,6 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     """
     This class is present so that each client connected will be ran as a own
     thread. In that way, all clients will be served by the server.
-
     No alterations are necessary
     """
     allow_reuse_address = True
@@ -127,7 +128,6 @@ if __name__ == "__main__":
     """
     This is the main method and is executed when you type "python Server.py"
     in your terminal.
-
     No alterations are necessary
     """
     HOST, PORT = 'localhost', 9998
