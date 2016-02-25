@@ -88,6 +88,7 @@ class Client:
         # TODO: Handle incoming message
 
         message_parser = MessageParser()
+
         message_parser.parse(message)
 
         # try:
@@ -124,4 +125,6 @@ if __name__ == '__main__':
 
     print "Welcome to this chat! Type login and your username to begin"
     client = Client('localhost', 9998)
+
+    #bare endre lokalhost til IP-adresse til PC!
 

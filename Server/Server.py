@@ -3,6 +3,8 @@ import SocketServer
 import datetime
 import json
 import re
+import socket
+import errno  
 
 """
 Variables and functions that must be used by all the ClientHandler objects
@@ -10,7 +12,7 @@ must be written here (e.g. a dictionary for connected clients)
 """
 
 connectedClients = []   #Liste over tilkoblede klienter
-history = []            #Dict over historikk, sorteres på key som er timestamp
+history = []            #Dict over historikk
 taken_usernames = []    #Liste over usernames i bruk
 
 class ClientHandler(SocketServer.BaseRequestHandler):
@@ -29,8 +31,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         """
         self.ip = self.client_address[0]
         self.port = self.client_address[1]
-        self.connection = self.request
-        connectedClients.append(self)  #Legger til seg selv (connection) til listen over tilkoblede klienter
+        self.connection = self.request 
 
         # Loop that listens for messages from the client
         while True:
@@ -67,7 +68,13 @@ class ClientHandler(SocketServer.BaseRequestHandler):
                     self.names()
                 else:
                     self.help()
-
+            except socket.error as error:
+                if self.username != "":
+                    if self in connectedClients:
+                        connectedClients.remove(self)           #Fjerner klient fra listen connectedClients
+                    if self.username in taken_usernames:
+                        print 'I remove username when interrupted'
+                        taken_usernames.remove(self.username)
             except Exception, e:
                 payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': 'server', 'response': 'error', 'content': str(e)})
                 self.connection.send(payload)
@@ -82,9 +89,10 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             if username not in taken_usernames:
                 print 'Brukernavn er ikke i taken_usernames'
                 self.username = username
+                connectedClients.append(self)
                 taken_usernames.append(self.username)
                 print 'New user %s connected' % self.username
-            #uppercase etc and right error &&& send history!!!
+
                 
                 info = 'Login successful'
                 payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': 'server', 'response': 'info', 'content': info})
@@ -100,11 +108,22 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 
     def logout(self):
         try: 
+            #Ikke lenger sende til denne klienten
+
             if self in connectedClients:
                 connectedClients.remove(self)           #Fjerner klient fra listen connectedClients
             if self.username in taken_usernames:
                 taken_usernames.remove(self.username)   #Fjerner brukernavn fra listen taken_usernames
-            self.connection.close()
+            #self.connection.close()
+            info = 'You are logging out...'
+            payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': 'server', 'response': 'info', 'content': info})
+            self.connection.send(payload)
+
+            info = 'User: %s has logged out' % self.username
+            payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': 'server', 'response': 'info', 'content': info})
+            for client in connectedClients:
+                client.connection.send(payload)
+            self.username = ''
             print 'User: %s has logged out' % self.username #Kan man aksessere self.username når har closed?
         except:
             raise Exception('Logout failed.')
