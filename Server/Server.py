@@ -63,19 +63,22 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 
 
             except socket.error as error:
+                print 'Errorcode: %s' %error[0]
                 if self.username != "":
                     if self in connectedClients:
                         connectedClients.remove(self)
                     if self.username in taken_usernames:
                         print 'I remove username when interrupted'
                         taken_usernames.remove(self.username)
+                break
+
             except Exception, e:
                 payload = json.dumps({'timestamp': datetime.datetime.now().strftime("%H:%M %d.%m.%y"), 'sender': 'server', 'response': 'error', 'content': str(e)})
                 self.connection.send(payload)
 
 
     def login(self, username):
-
+        print 'Username '
         if re.match("^[A-Za-z0-9]*$", username):
             if username not in taken_usernames:
                 self.username = username

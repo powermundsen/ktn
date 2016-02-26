@@ -20,7 +20,7 @@ class Client:
 
         #Creats the running thread for recieving messages 
         self.thread = MessageReceiver(self, self.connection)
-        self.thread.start()
+        self.thread.start()  #--> run in MessageReceiver
         running_status = self.thread.is_alive()
 
         while running_status:
