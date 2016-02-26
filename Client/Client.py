@@ -3,6 +3,7 @@ import socket
 from MessageReceiver import MessageReceiver
 from MessageParser import MessageParser
 import json
+import os   
 
 class Client:
     def __init__(self, host, server_port):
@@ -15,6 +16,8 @@ class Client:
         self.msg = ''
 
     def run(self):
+
+
         # Connecting to server
         self.connection.connect((self.host, self.server_port))
 
@@ -86,6 +89,8 @@ class Client:
 
 
 if __name__ == '__main__':
+    #Clear terminal window 
+    os.system('cls' if os.name == 'nt' else 'clear')
     print "\n~~~~~~~ Welcome to this chat! ~~~~~~~ \n  Type login and your username to begin \n"
     client = Client('localhost', 9998)
 
