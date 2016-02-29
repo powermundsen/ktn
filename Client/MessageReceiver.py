@@ -24,7 +24,7 @@ class MessageReceiver(Thread):
         while self.activated:
             # Look for message
             try:
-                msg = self.connection.recv(1024)
+                msg = self.connection.recv(4096)
 
             except Exception as e:
                 print(e.message)

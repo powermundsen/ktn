@@ -125,7 +125,7 @@ if __name__ == '__main__':
 
 
     print "\n                ~~~~~~~ Welcome to this awesome chat! ~~~~~~~\n            ~~~~~~~Type 'login' and then your username to begin~~~~~~~ \n \n"
-    client = Client('localhost', 9998)
+    client = Client("10.20.91.3", 9998)
 
     #bare endre lokalhost til IP-adresse til PC!
 

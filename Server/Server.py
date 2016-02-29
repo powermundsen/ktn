@@ -28,11 +28,18 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         self.port = self.client_address[1]
         self.connection = self.request 
 
+        #OPS: THIS IS NEEDED TO RUN WITH SOULUTION-CLIENT,
+        #DOES NOT WORK WITH OUR CLIENT!
+        print 'Client connected %s %s' %(self.ip, self.port)
         # Loop that listens for messages from the client
+
+        self.help()
+
         while True:
             try:
-                received_string = self.connection.recv(1024) 
+                received_string = self.connection.recv(4096) 
                 received_json = json.loads(received_string)
+                print received_json
 
                 if received_json['request'] == 'login':
                     self.login(received_json['content'])
@@ -168,7 +175,7 @@ if __name__ == "__main__":
     This is the main method and is executed when you type "python Server.py"
     in your terminal.
     """
-    HOST, PORT = 'localhost', 9998
+    HOST, PORT = "10.20.91.3", 9992
     print 'Server running...'
 
     # Set up and initiate the TCP server
